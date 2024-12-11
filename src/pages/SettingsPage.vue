@@ -12,7 +12,6 @@ import {
   CardContent,
   CardFooter,
 } from "@/components/ui/card";
-import Navbar from "@/components/Navbar.vue";
 import { Label } from "@/components/ui/label";
 
 const userStore = useUserStore();

@@ -3,12 +3,13 @@
     <CardHeader class="pb-2">
       <CardTitle class="text-xl font-semibold text-gray-800">{{ article.title }}</CardTitle>
       <CardDescription class="text-gray-600 mt-1">{{ article.body.slice(0, 100) }}...</CardDescription>
+      <CardDescription class="text-gray-600 mt-1">{{ article.description }}</CardDescription>
     </CardHeader>
 
     <CardContent class="pt-2">
       <div class="mt-2 flex flex-wrap">
         <Badge v-for="(tag, index) in article.tagList" :key="index" class="mr-2 mb-2">
-          {{ tag }}
+          {{ capitalize(tag) }}
         </Badge>
       </div>
     </CardContent>
@@ -62,6 +63,10 @@ const props = defineProps({
 });
 
 const router = useRouter();
+
+const capitalize = (str: string) => {
+  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+};
 
 const goToArticle = () => {
   router.push({ name: 'SingleArticle', params: { slug: props.article.slug } });

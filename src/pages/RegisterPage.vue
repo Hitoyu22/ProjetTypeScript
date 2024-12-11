@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
+import { useUserStore } from '@/store/userStore'; 
 import { useRouter } from 'vue-router';
-import axios from 'axios';
 import {
   Card,
   CardHeader,
@@ -20,41 +20,26 @@ const password = ref('');
 const confirmPassword = ref('');
 const registerError = ref(false);
 
+const userStore = useUserStore();
 const router = useRouter();
 
 const registerUser = async () => {
-  try {
-    if (password.value !== confirmPassword.value) {
-      registerError.value = true;
-      return;
-    }
+  if (password.value !== confirmPassword.value) {
+    registerError.value = true;
+    return;
+  }
 
-    const response = await axios.post(
-      'https://realword-api.nouwillcode.com/api/users',
-      {
-        user: {
-          email: email.value,
-          username: username.value,
-          password: password.value,
-          bio: 'New user bio',
-          image: 'https://example.com/default-profile.jpg',
-        },
-      }
-    );
+  const response = await userStore.register(email.value, username.value, password.value);
 
-    if (response.status === 201 && response.data.user) {
-      registerError.value = false;
-      router.push('/login');
-    } else {
-      registerError.value = true;
-    }
-  } catch (error) {
-    console.error('Erreur lors de l\'inscription :', error);
+  if (response.success) {
+    registerError.value = false;
+    router.push('/login');
+  } else {
     registerError.value = true;
   }
 };
-
 </script>
+
 <template>
   <div class="w-full lg:grid lg:min-h-[600px] lg:grid-cols-2 xl:min-h-[800px]">
     <div class="hidden bg-muted lg:block">
@@ -101,7 +86,7 @@ const registerUser = async () => {
             <div class="grid gap-2 relative">
               <Label for="password">Mot de passe</Label>
               <Input
-                :type="password"
+                type="password"
                 id="password"
                 v-model="password"
                 placeholder="Entrez votre mot de passe"
@@ -112,7 +97,7 @@ const registerUser = async () => {
             <div class="grid gap-2">
               <Label for="confirmPassword">Confirmer le mot de passe</Label>
               <Input
-                :type="password"
+                type="password"
                 v-model="confirmPassword"
                 placeholder="Confirmez votre mot de passe"
                 required

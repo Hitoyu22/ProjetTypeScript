@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import axios from 'axios';
 import { useUserStore } from '@/store/userStore';
 import { useRouter } from 'vue-router';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
@@ -16,37 +15,16 @@ const userStore = useUserStore();
 const router = useRouter();
 
 const loginUser = async () => {
-  try {
-    const response = await axios.post(
-      'https://realword-api.nouwillcode.com/api/users/login',
-      {
-        user: {
-          email: email.value,
-          password: password.value,
-        }
-        
-      }
-    );
+  const response = await userStore.login(email.value, password.value);
 
-    if (response.status === 201 && response.data.user) {
-      const { token, username } = response.data.user;
-
-      userStore.setUser(token, username);
-
-      loginError.value = false;
-
-      router.push('/articles');
-    } else {
-      loginError.value = true;
-    }
-  } catch (error) {
-    console.error('Erreur lors de la connexion :', error);
+  if (response.success) {
+    loginError.value = false;
+    router.push('/articles');
+  } else {
     loginError.value = true;
   }
 };
-
 </script>
-
 
 <template>
   <div class="w-full lg:grid lg:min-h-[600px] lg:grid-cols-2 xl:min-h-[800px]">
@@ -73,13 +51,12 @@ const loginUser = async () => {
             <div class="grid gap-2 relative">
               <Label for="password">Mot de passe</Label>
               <Input
-                :type="password"
+                type="password"
                 id="password"
                 v-model="password"
                 placeholder="Entrez votre mot de passe"
                 required
               />
-              
             </div>
 
             <p v-if="loginError" class="text-sm text-red-600">

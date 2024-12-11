@@ -1,17 +1,20 @@
 import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router';
-import { useUserStore } from '@/store/userStore'; // Importer le store pour vérifier l'authentification
+import { useUserStore } from './../store/userStore'; 
 import LoginPage from './../pages/LoginPage.vue';
-import SignUpPage from './../pages/SignUpPage.vue';
 import SingleArticlePage from './../pages/SingleArticlePage.vue';
-import FavoritesPage from './../pages/FavoritesPage.vue';
-import AllArticlesPage from '@/pages/AllArticlesPage.vue';
-import RegisterPage from '@/pages/RegisterPage.vue';
+import AllArticlesPage from './../pages/AllArticlesPage.vue';
+import RegisterPage from './../pages/RegisterPage.vue';
+import Home from './../pages/HomePage.vue';
+import NotFound from './../pages/NotFoundPage.vue';
+import SettingsPage from '@/pages/SettingsPage.vue';
+import LogoutPage from '@/pages/LogoutPage.vue';
+import DefaultLayout from '@/pages/DefaultLayout.vue';
 
 const routes: RouteRecordRaw[] = [
   {
     path: '/',
     name: 'Home',
-    redirect: '/login',
+    component: Home,
   },
   {
     path: '/login',
@@ -19,40 +22,57 @@ const routes: RouteRecordRaw[] = [
     component: LoginPage,
   },
   {
+    path: '/logout',
+    name: 'Logout',
+    component: LogoutPage,
+  },
+  {
     path: '/register',
     name: 'Register',
     component: RegisterPage,
   },
   {
-    path: '/signup',
-    name: 'SignUp',
-    component: SignUpPage,
+    path: '/articles',
+    component: DefaultLayout,
+    children: [
+      {
+        path: '',
+        name: 'AllArticles',
+        component: AllArticlesPage,
+      },
+      {
+        path: ':slug',
+        name: 'SingleArticle',
+        component: SingleArticlePage,
+      },
+    ],
   },
   {
-    path: '/articles/',
-    name: 'Articles',
-    component: AllArticlesPage,
+    path: '/settings',
+    component: DefaultLayout,
+    children: [
+      {
+        path: '',
+        name: 'SettingsPage',
+        component: SettingsPage,
+      },
+    ],
   },
   {
-    path: '/articles/:slug',
-    name: 'SingleArticle',
-    component: SingleArticlePage,
-  },
-  {
-    path: '/favorites',
-    name: 'Favorites',
-    component: FavoritesPage,
+    path: '/:catchAll(.*)',
+    name: 'NotFound',
+    component: NotFound,
   },
 ];
 
-// Créer un routeur
 const router = createRouter({
   history: createWebHistory(),
   routes,
 });
-router.beforeEach((to, from, next) => {
+
+router.beforeEach((to, _, next) => {
   const userStore = useUserStore();
-  const isAuthenticated = !!userStore.token;  
+  const isAuthenticated = !!userStore.token;
 
   if (['/articles', '/favorites'].includes(to.path) && !isAuthenticated) {
     next('/login');  
@@ -60,6 +80,5 @@ router.beforeEach((to, from, next) => {
     next(); 
   }
 });
-
 
 export default router;

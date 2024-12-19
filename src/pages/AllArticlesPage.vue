@@ -35,24 +35,30 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { useArticlesStore, Article } from '@/store/articlesStore';
 import ArticleCard from '@/components/ArticleCard.vue';
 import { Button } from '@/components/ui/button';
 import SearchBar from '@/components/SearchBar.vue';
+import {
+  fetchArticles as fetchArticlesService,
+  fetchFavoriteArticles as fetchFavoriteArticlesService,
+  extractTagsFromArticles as extractTagsFromArticlesService,
+} from '@/service/article';
 
-const store = useArticlesStore();
+// Variables et états
 const loading = ref(true);
-
-const tags = computed(() => store.tagsList);
+const tags = ref<string[]>([]);
 const currentPage = ref(1);
-const filteredArticles = ref<Article[]>([]);
+const filteredArticles = ref<any[]>([]);  // Remplace `any` par le type de ton article si nécessaire
 const isFavoritesVisible = ref(false);
+const totalItemsPerPage = 10; // Défini par défaut ou dans les paramètres de ton service.
 
+// Calcul du nombre total de pages
 const totalPages = computed(() =>
-  Math.ceil(store.articlesCount / store.itemsPerPage)
+  Math.ceil(filteredArticles.value.length / totalItemsPerPage)
 );
 
-const mapArticles = (articles: any[]): Article[] => {
+// Mapper les articles pour les afficher dans le composant ArticleCard
+const mapArticles = (articles: any[]) => {
   return articles.map((article) => ({
     title: article.title,
     body: article.body,
@@ -69,20 +75,29 @@ const mapArticles = (articles: any[]): Article[] => {
       bio: article.author.bio,
       image: article.author.image,
       following: article.author.following,
-    }
+    },
   }));
 };
 
+// Fonction pour récupérer les articles
 const fetchArticles = async () => {
   loading.value = true;
   try {
-    store.currentPage = currentPage.value;
     if (isFavoritesVisible.value) {
-      await store.fetchFavoriteArticles();
+      // Appel à la fonction pour récupérer les articles favoris
+      const { articles } = await fetchFavoriteArticlesService({
+        page: currentPage.value,
+        limit: totalItemsPerPage,
+      });
+      filteredArticles.value = mapArticles(articles);
     } else {
-      await store.fetchArticles();
+      // Appel à la fonction pour récupérer tous les articles
+      const { articles } = await fetchArticlesService({
+        page: currentPage.value,
+        limit: totalItemsPerPage,
+      });
+      filteredArticles.value = mapArticles(articles);
     }
-    filteredArticles.value = mapArticles(store.articles);
   } catch (error) {
     console.error('Erreur lors de la récupération des articles:', error);
   } finally {
@@ -90,26 +105,33 @@ const fetchArticles = async () => {
   }
 };
 
+// Mettre à jour les filtres et récupérer les articles
 const updateFilters = (filters: any) => {
-  store.filters = { ...store.filters, ...filters };
   currentPage.value = 1;
   fetchArticles();
 };
 
+// Fonction pour changer de page
 const goToPage = (page: number) => {
   if (page < 1 || page > totalPages.value) return;
   currentPage.value = page;
   fetchArticles();
 };
 
+// Fonction pour basculer entre les favoris et tous les articles
 const toggleFavorites = () => {
   isFavoritesVisible.value = !isFavoritesVisible.value;
   fetchArticles();
 };
 
+// Initialisation des tags lors du montage du composant
 onMounted(async () => {
-  store.extractTags();
-  fetchArticles();
+  try {
+    tags.value = await extractTagsFromArticlesService();  // Récupérer les tags
+    fetchArticles();  // Récupérer les articles après les tags
+  } catch (error) {
+    console.error('Erreur lors de l’extraction des tags:', error);
+  }
 });
 </script>
 

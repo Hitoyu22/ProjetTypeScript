@@ -146,17 +146,32 @@
   </div>
 </template>
 
-
 <script lang="ts">
 import { defineComponent, ref, onMounted } from "vue";
-import { useArticlesStore, Article, Comment } from "@/store/articlesStore";
 import { useUserStore } from "@/store/userStore";
+import {
+  fetchArticle,
+  fetchComments,
+  addComment,
+  deleteArticle as deleteArticleService,
+  deleteComment as deleteCommentService,
+  unfavoriteArticle,
+  favoriteArticle as fetchFavoriteArticles,
+} from "@/service/article";
 import { LucideArrowLeft, LucideSend, LucideHeart, LucideTrash } from "lucide-vue-next";
 import { useRouter } from "vue-router";
 import Textarea from "../components/ui/textarea/Textarea.vue";
 import Button from "../components/ui/button/Button.vue";
 import Badge from "@/components/ui/badge/Badge.vue";
-import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import Navbar from "@/components/Navbar.vue";
 import UpdateArticle from "@/components/UpdateArticle.vue";
 
@@ -181,23 +196,20 @@ export default defineComponent({
   },
   name: "SingleArticlePage",
   setup() {
-    const store = useArticlesStore();
     const user = useUserStore();
     const router = useRouter();
     const slug = window.location.pathname.split("/").pop() || "";
-    const article = ref<Article | null>(null);
-    const comments = ref<Comment[]>([]);
-    const newComment = ref<string>(""); 
-    const isOwner = ref(false); 
+    const article = ref(null);
+    const comments = ref([]);
+    const newComment = ref("");
+    const isOwner = ref(false);
     const isFollowing = ref(false);
     const showModal = ref(false);
 
     const fetchData = async () => {
       try {
-        await store.fetchArticle(slug);
-        article.value = store.article;
-        await store.fetchComments(slug);
-        comments.value = store.comments;
+        article.value = await fetchArticle(slug);
+        comments.value = await fetchComments(slug);
         checkOwnership();
         checkFollowStatus();
       } catch (error) {
@@ -209,14 +221,12 @@ export default defineComponent({
       fetchData();
     });
 
-
     const submitComment = async () => {
       if (newComment.value.trim()) {
         try {
-          await store.addComment(slug, newComment.value);
+          await addComment(slug, newComment.value);
           newComment.value = "";
-          await store.fetchComments(slug);
-          comments.value = store.comments;
+          comments.value = await fetchComments(slug);
         } catch (error) {
           console.error("Erreur lors de la soumission du commentaire:", error);
         }
@@ -227,11 +237,10 @@ export default defineComponent({
       try {
         if (article.value) {
           if (article.value.favorited) {
-            await store.unfavoriteArticle(slug);
+            article.value = await unfavoriteArticle(slug);
           } else {
-            await store.favoriteArticle(slug);
+            article.value = await favoriteArticle(slug);
           }
-          article.value = store.article;
         }
       } catch (error) {
         console.error("Erreur lors du changement de statut des favoris:", error);
@@ -260,9 +269,9 @@ export default defineComponent({
     const toggleFollow = async () => {
       try {
         if (isFollowing.value) {
-          await user.unfollowUser(article.value!.author.username);
+          await user.unfollowUser(article.value.author.username);
         } else {
-          await user.followUser(article.value!.author.username);
+          await user.followUser(article.value.author.username);
         }
         isFollowing.value = !isFollowing.value;
       } catch (error) {
@@ -270,11 +279,10 @@ export default defineComponent({
       }
     };
 
-
     const deleteArticle = async () => {
       try {
-        await store.deleteArticle(slug);
-        router.push("/articles"); // Rediriger après suppression
+        await deleteArticleService(slug);
+        router.push("/articles");
       } catch (error) {
         console.error("Erreur lors de la suppression de l'article:", error);
       }
@@ -282,8 +290,8 @@ export default defineComponent({
 
     const deleteComment = async (commentId: number) => {
       try {
-        await store.deleteComment(slug, commentId);
-        comments.value = comments.value.filter(comment => comment.id !== commentId);
+        await deleteCommentService(slug, commentId);
+        comments.value = await fetchComments(slug);
       } catch (error) {
         console.error("Erreur lors de la suppression du commentaire:", error);
       }
@@ -294,15 +302,19 @@ export default defineComponent({
       comments,
       newComment,
       isOwner,
+      showModal,
       isFollowing,
-      fetchData,
+      toggleFollow,
       submitComment,
       toggleFavorite,
-      toggleFollow,
       deleteArticle,
       deleteComment,
-      showModal,
+      fetchData,
     };
   },
 });
 </script>
+
+<style scoped>
+/* Ajoutez votre style ici */
+</style>

@@ -7,7 +7,7 @@
       <DialogHeader>
         <DialogTitle>Créer un nouvel article</DialogTitle>
         <DialogDescription>
-          Remplissez les différentes champs ci-dessous. 
+          Remplissez les différents champs ci-dessous. 
           Les tags doivent être séparés par des virgules. 
         </DialogDescription>
       </DialogHeader>
@@ -62,7 +62,7 @@
 
       <DialogFooter>
         <Button 
-          @click="createArticle" 
+          @click="createArticleHandler" 
           :disabled="isSubmitDisabled"
         >
           Créer l'article
@@ -86,8 +86,8 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useArticlesStore } from '@/store/articlesStore';
 import { defineEmits } from 'vue';
+import { createArticle } from '@/service/article'; // Service pour la création d'article
 
 const article = ref({
   title: '',
@@ -97,9 +97,7 @@ const article = ref({
 });
 
 const tagInput = ref('');
-const articlesStore = useArticlesStore();
 const dialogOpen = ref(false);
-
 const submitted = ref(false);
 
 const emit = defineEmits(['created']);
@@ -118,26 +116,28 @@ const isSubmitDisabled = computed(() => {
   return titleError || descriptionError || bodyError || tagsError;
 });
 
-const createArticle = async () => {
-  submitted.value = true; 
-  
+const createArticleHandler = async () => {
+  submitted.value = true; // Déclenche la validation
+
   const { titleError, descriptionError, bodyError, tagsError } = validateFields();
 
   if (titleError || descriptionError || bodyError || tagsError) {
-    return;  
+    return;  // Si des erreurs sont présentes, on ne soumet pas
   }
 
   try {
+    // Préparation des données pour l'API
     const newArticle = {
-      article: {
+      
         title: article.value.title,
         description: article.value.description,
         body: article.value.body,
         tagList: tagInput.value.split(',').map((tag: string) => tag.trim()),
-      },
     };
 
-    await articlesStore.createArticle(newArticle);
+    const response = await createArticle(newArticle); // Appel au service pour créer l'article
+
+    // Ferme le dialogue après création et émet l'événement
     dialogOpen.value = false;
     emit('created');
   } catch (error) {
@@ -145,6 +145,7 @@ const createArticle = async () => {
   }
 };
 
+// Réinitialisation des champs lorsque le dialogue est fermé
 const handleDialogClose = () => {
   article.value.title = '';
   article.value.description = '';

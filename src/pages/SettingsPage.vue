@@ -47,6 +47,7 @@ const updateUser = async () => {
   };
 
   await userStore.updateUser(updatedData); 
+  await fetchUserData();
 };
 </script>
 

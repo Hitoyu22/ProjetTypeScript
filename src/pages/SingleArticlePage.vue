@@ -1,14 +1,11 @@
 <template>
   <div v-if="article" class="container mx-auto px-6 py-8">
     <div class="mb-6 flex justify-between items-center">
-      <!-- Bouton Retour aux articles -->
       <Button @click="$router.push('/articles')" class="mr-4">
         <LucideArrowLeft class="mr-2" /> Retour aux articles
       </Button>
 
-      <!-- Conteneur pour les boutons Supprimer et Mettre à jour l'article -->
       <div class="flex items-center space-x-4 ml-auto">
-        <!-- Bouton Supprimer l'article -->
         <Dialog v-if="isOwner">
           <DialogTrigger as-child>
             <Button
@@ -36,12 +33,10 @@
           </DialogContent>
         </Dialog>
 
-        <!-- Bouton Mettre à jour l'article -->
         <UpdateArticle v-if="isOwner && article" :articleToUpdate="article" @updated="fetchData" />
       </div>
     </div>
 
-    <!-- Bloc complet avec contenu, auteur, tags et réactions -->
     <div class="bg-white p-8 rounded-xl shadow-lg max-w-3xl mx-auto mb-8">
       <div class="flex items-center space-x-4 mb-8">
         <img
@@ -90,12 +85,11 @@
           class="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition duration-300"
         >
           <LucideHeart class="mr-2" />
-          Ajouter aux favoris
+          {{ article.favorited ? "Retirer des favoris" : "Ajouter aux favoris" }}
         </Button>
       </div>
     </div>
 
-    <!-- Section des commentaires -->
     <div v-if="comments.length > 0" class="max-w-3xl mx-auto mt-8">
       <h2 class="text-3xl font-semibold text-gray-800 mb-4">Commentaires</h2>
       <div
@@ -110,7 +104,6 @@
           </p>
         </div>
 
-        <!-- Icône de corbeille pour supprimer le commentaire, visible seulement pour le propriétaire -->
         <div v-if="isOwner">
           <Button @click="deleteComment(comment.id)" class="text-red-600 hover:text-red-700" variant="link">
             <LucideTrash />
@@ -123,7 +116,6 @@
       Aucun commentaire encore
     </p>
 
-    <!-- Ajouter un commentaire -->
     <div class="mt-8 max-w-3xl mx-auto">
       <Textarea
         v-model="newComment"
@@ -140,7 +132,6 @@
     </div>
   </div>
 
-  <!-- Loading spinner -->
   <div v-else class="flex justify-center items-center h-screen bg-gray-100">
     <p class="text-xl text-gray-500">Chargement de l'article...</p>
   </div>
@@ -148,32 +139,16 @@
 
 <script lang="ts">
 import { defineComponent, ref, onMounted } from "vue";
+import { fetchArticle, fetchComments, addComment, deleteArticle as deleteArticleService, deleteComment as deleteCommentService, unfavoriteArticle, addFavoriteArticle } from "@/service/article";
 import { useUserStore } from "@/store/userStore";
-import {
-  fetchArticle,
-  fetchComments,
-  addComment,
-  deleteArticle as deleteArticleService,
-  deleteComment as deleteCommentService,
-  unfavoriteArticle,
-  favoriteArticle as fetchFavoriteArticles,
-} from "@/service/article";
 import { LucideArrowLeft, LucideSend, LucideHeart, LucideTrash } from "lucide-vue-next";
 import { useRouter } from "vue-router";
 import Textarea from "../components/ui/textarea/Textarea.vue";
 import Button from "../components/ui/button/Button.vue";
 import Badge from "@/components/ui/badge/Badge.vue";
-import {
-  Dialog,
-  DialogTrigger,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import Navbar from "@/components/Navbar.vue";
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import UpdateArticle from "@/components/UpdateArticle.vue";
+import { Article, Comment } from "@/service/article";
 
 export default defineComponent({
   components: {
@@ -191,20 +166,21 @@ export default defineComponent({
     DialogTitle,
     DialogDescription,
     DialogFooter,
-    Navbar,
-    UpdateArticle,
+    UpdateArticle
   },
   name: "SingleArticlePage",
   setup() {
-    const user = useUserStore();
     const router = useRouter();
     const slug = window.location.pathname.split("/").pop() || "";
-    const article = ref(null);
-    const comments = ref([]);
+    const article = ref<Article | null>(null);
+    const comments = ref<Comment[]>([]);
     const newComment = ref("");
     const isOwner = ref(false);
     const isFollowing = ref(false);
     const showModal = ref(false);
+
+    const userStore = useUserStore();
+
 
     const fetchData = async () => {
       try {
@@ -217,9 +193,7 @@ export default defineComponent({
       }
     };
 
-    onMounted(() => {
-      fetchData();
-    });
+    
 
     const submitComment = async () => {
       if (newComment.value.trim()) {
@@ -239,7 +213,7 @@ export default defineComponent({
           if (article.value.favorited) {
             article.value = await unfavoriteArticle(slug);
           } else {
-            article.value = await favoriteArticle(slug);
+            article.value = await addFavoriteArticle(slug);
           }
         }
       } catch (error) {
@@ -247,44 +221,14 @@ export default defineComponent({
       }
     };
 
-    const checkOwnership = () => {
-      const currentUser = localStorage.getItem("username");
-      if (article.value) {
-        isOwner.value = currentUser === article.value.author.username;
-      }
-    };
-
-    const checkFollowStatus = async () => {
-      const currentUser = localStorage.getItem("username");
-      if (article.value && currentUser) {
-        try {
-          const response = await user.checkFollowing(article.value.author.username);
-          isFollowing.value = response;
-        } catch (error) {
-          console.error("Erreur lors de la vérification du statut de suivi:", error);
-        }
-      }
-    };
-
-    const toggleFollow = async () => {
-      try {
-        if (isFollowing.value) {
-          await user.unfollowUser(article.value.author.username);
-        } else {
-          await user.followUser(article.value.author.username);
-        }
-        isFollowing.value = !isFollowing.value;
-      } catch (error) {
-        console.error("Erreur lors de la gestion du suivi:", error);
-      }
-    };
-
     const deleteArticle = async () => {
-      try {
-        await deleteArticleService(slug);
-        router.push("/articles");
-      } catch (error) {
-        console.error("Erreur lors de la suppression de l'article:", error);
+      if (article.value) {
+        try {
+          await deleteArticleService(slug);
+          router.push("/articles");
+        } catch (error) {
+          console.error("Erreur lors de la suppression de l'article:", error);
+        }
       }
     };
 
@@ -297,24 +241,72 @@ export default defineComponent({
       }
     };
 
+    const checkOwnership = () => {
+      const currentUser = localStorage.getItem("username");
+      if (article.value && article.value.author) {
+        isOwner.value = currentUser === article.value.author.username;
+      }
+    };
+
+    const checkFollowStatus = async () => {
+        const currentUser = localStorage.getItem("username") || "";
+        console.log("checkFollowStatus called");
+        console.log("currentUser:", currentUser);
+        if (article.value && currentUser === article.value.author.username) {
+          console.log("C'est votre propre article");
+          isFollowing.value = false;
+          return;
+        }
+        if (article.value) {
+          const followed = await userStore.checkFollowing(article.value.author.username);
+          if (followed) {
+          isFollowing.value = followed;
+          return;
+        }
+        }
+      };
+
+    const toggleFollow = async () => {
+      if (article.value && article.value.author) {
+        try {
+          const username = article.value.author.username;
+          if (isFollowing.value) {
+            await userStore.unfollowUser(username);
+            article.value.author.following = false;
+          } else {
+            await userStore.followUser(username);
+            article.value.author.following = true;
+          }
+          isFollowing.value = !isFollowing.value;
+        } catch (error) {
+          console.error("Erreur lors du changement de statut de suivi:", error);
+        }
+      }
+    };
+
+    onMounted(() => {
+  fetchData();
+  checkFollowStatus();
+  checkOwnership();
+});
+
     return {
       article,
       comments,
       newComment,
       isOwner,
-      showModal,
       isFollowing,
-      toggleFollow,
+      showModal,
+      fetchData,
       submitComment,
-      toggleFavorite,
       deleteArticle,
       deleteComment,
-      fetchData,
+      checkFollowStatus,
+      toggleFavorite,
+      toggleFollow,
     };
   },
 });
-</script>
 
-<style scoped>
-/* Ajoutez votre style ici */
-</style>
+
+</script>

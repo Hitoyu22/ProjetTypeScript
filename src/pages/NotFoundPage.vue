@@ -20,7 +20,6 @@
 </script>
 
 <style scoped>
-/* Optionnel : ajouter des styles pour améliorer l'aspect de la page 404 */
 h1 {
   font-size: 6rem;
   color: #f87171;

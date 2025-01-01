@@ -12,5 +12,4 @@
   </script>
   
   <style scoped>
-  /* Ajoutez ici vos styles spécifiques au layout */
   </style>

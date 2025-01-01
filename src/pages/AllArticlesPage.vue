@@ -1,19 +1,17 @@
 <template>
   <div>
-    <SearchBar :tags="tags" @update:filters="updateFilters" />
+    <SearchBar v-if="!isFavoritesVisible" :tags="tags" @update-filters="updateFilters" />
+    
     <div class="text-center mt-4" v-if="loading">Chargement...</div>
     <div v-else>
-      <!-- Affichage du message lorsqu'il n'y a pas d'articles -->
       <div v-if="filteredArticles.length === 0" class="text-center mt-6 text-lg font-semibold">
         Il n'existe aucun article.
       </div>
 
-      <!-- Affichage des articles uniquement si des articles existent -->
       <div v-if="filteredArticles.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
-        <ArticleCard v-for="article in filteredArticles" :key="article.slug" :article="article" />
+        <ArticleCard v-for="article in currentArticles" :key="article.slug" :article="article" />
       </div>
 
-      <!-- Pagination -->
       <div v-if="filteredArticles.length > 0" class="flex justify-center mt-6">
         <Button @click="goToPage(currentPage - 1)" :disabled="currentPage === 1" class="mr-2">
           Précédente
@@ -24,10 +22,9 @@
       </div>
     </div>
 
-    <!-- Bouton Voir les favoris -->
     <div class="flex justify-center mt-6">
       <Button @click="toggleFavorites" :disabled="loading">
-        {{ isFavoritesVisible ? 'Voir tous les articles' : 'Voir les favoris' }}
+        {{ isFavoritesVisible ? 'Voir tous les articles' : 'Voir articles des personnes suivies' }}
       </Button>
     </div>
   </div>
@@ -44,22 +41,24 @@ import {
   extractTagsFromArticles as extractTagsFromArticlesService,
 } from '@/service/article';
 
-// Variables et états
-const loading = ref(true);
+const loading = ref(false);
 const tags = ref<string[]>([]);
 const currentPage = ref(1);
-const filteredArticles = ref<any[]>([]);  // Remplace `any` par le type de ton article si nécessaire
+const filteredArticles = ref<any[]>([]);
 const isFavoritesVisible = ref(false);
-const totalItemsPerPage = 10; // Défini par défaut ou dans les paramètres de ton service.
+const selectedTag = ref<string | null>(null);
+const totalItemsPerPage = 10;
 
-// Calcul du nombre total de pages
-const totalPages = computed(() =>
-  Math.ceil(filteredArticles.value.length / totalItemsPerPage)
-);
+const currentArticles = computed(() => {
+  const start = (currentPage.value - 1) * totalItemsPerPage;
+  const end = start + totalItemsPerPage;
+  return filteredArticles.value.slice(start, end);
+});
 
-// Mapper les articles pour les afficher dans le composant ArticleCard
-const mapArticles = (articles: any[]) => {
-  return articles.map((article) => ({
+const totalPages = computed(() => Math.ceil(filteredArticles.value.length / totalItemsPerPage));
+
+const mapArticles = (articles: any[]) =>
+  articles.map((article) => ({
     title: article.title,
     body: article.body,
     tagList: article.tagList,
@@ -77,27 +76,22 @@ const mapArticles = (articles: any[]) => {
       following: article.author.following,
     },
   }));
-};
 
-// Fonction pour récupérer les articles
 const fetchArticles = async () => {
   loading.value = true;
   try {
-    if (isFavoritesVisible.value) {
-      // Appel à la fonction pour récupérer les articles favoris
-      const { articles } = await fetchFavoriteArticlesService({
-        page: currentPage.value,
-        limit: totalItemsPerPage,
-      });
-      filteredArticles.value = mapArticles(articles);
-    } else {
-      // Appel à la fonction pour récupérer tous les articles
-      const { articles } = await fetchArticlesService({
-        page: currentPage.value,
-        limit: totalItemsPerPage,
-      });
-      filteredArticles.value = mapArticles(articles);
-    }
+    const params: Record<string, any> = {
+      page: currentPage.value,
+      limit: totalItemsPerPage,
+      tag: selectedTag.value,
+    };
+
+    const service = isFavoritesVisible.value
+      ? fetchFavoriteArticlesService
+      : fetchArticlesService;
+
+    const { articles } = await service(params);
+    filteredArticles.value = mapArticles(articles);
   } catch (error) {
     console.error('Erreur lors de la récupération des articles:', error);
   } finally {
@@ -105,32 +99,32 @@ const fetchArticles = async () => {
   }
 };
 
-// Mettre à jour les filtres et récupérer les articles
-const updateFilters = (filters: any) => {
+const updateFilters = (filters: { selectedTag: string | null }) => {
   currentPage.value = 1;
+  selectedTag.value = filters.selectedTag;
   fetchArticles();
 };
 
-// Fonction pour changer de page
 const goToPage = (page: number) => {
   if (page < 1 || page > totalPages.value) return;
   currentPage.value = page;
   fetchArticles();
 };
 
-// Fonction pour basculer entre les favoris et tous les articles
 const toggleFavorites = () => {
   isFavoritesVisible.value = !isFavoritesVisible.value;
   fetchArticles();
 };
 
-// Initialisation des tags lors du montage du composant
 onMounted(async () => {
+  loading.value = true;
   try {
-    tags.value = await extractTagsFromArticlesService();  // Récupérer les tags
-    fetchArticles();  // Récupérer les articles après les tags
+    tags.value = await extractTagsFromArticlesService();
+    fetchArticles();
   } catch (error) {
     console.error('Erreur lors de l’extraction des tags:', error);
+  } finally {
+    loading.value = false;
   }
 });
 </script>

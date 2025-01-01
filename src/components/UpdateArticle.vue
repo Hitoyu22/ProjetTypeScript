@@ -14,7 +14,6 @@
       </DialogHeader>
 
       <div class="grid gap-4 py-4" v-if="article">
-        <!-- Titre -->
         <div class="grid grid-cols-4 items-center gap-3">
           <Label for="title" class="text-right">Titre <span class="text-red-500">*</span></Label>
           <Input
@@ -27,7 +26,6 @@
           <span v-if="submitted && !article.title.trim()" class="text-red-500 text-sm">Le titre est obligatoire</span>
         </div>
 
-        <!-- Description -->
         <div class="grid grid-cols-4 items-center gap-4">
           <Label for="description" class="text-right">Description <span class="text-red-500">*</span></Label>
           <Input
@@ -40,7 +38,6 @@
           <span v-if="submitted && !article.description.trim()" class="text-red-500 text-sm">La description est obligatoire</span>
         </div>
 
-        <!-- Corps -->
         <div class="grid grid-cols-4 items-center gap-4">
           <Label for="body" class="text-right">Corps <span class="text-red-500">*</span></Label>
           <Input
@@ -53,7 +50,6 @@
           <span v-if="submitted && !article.body.trim()" class="text-red-500 text-sm">Le corps de l'article est obligatoire</span>
         </div>
 
-        <!-- Tags -->
         <div class="grid grid-cols-4 items-center gap-4">
           <Label for="tags" class="text-right">Tags <span class="text-red-500">*</span></Label>
           <Input
@@ -69,7 +65,7 @@
       </div>
 
       <DialogFooter>
-        <Button @click="updateArticle" :disabled="isSubmitDisabled">
+        <Button @click="articleUpdate" :disabled="isSubmitDisabled">
           Mettre à jour l'article
         </Button>
       </DialogFooter>
@@ -91,8 +87,8 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useArticlesStore, Article } from '@/store/articlesStore';
 import { defineProps, defineEmits, PropType } from 'vue';
+import { updateArticle, Article } from '@/service/article';
 
 const props = defineProps({
   articleToUpdate: {
@@ -105,7 +101,6 @@ const emit = defineEmits(['updated']);
 
 const article = ref<Article | null>(null);
 const tagInput = ref('');
-const articlesStore = useArticlesStore();
 const dialogOpen = ref(false);
 const submitted = ref(false);
 
@@ -145,7 +140,7 @@ const isSubmitDisabled = computed(() => {
   return titleError || descriptionError || bodyError || tagsError;
 });
 
-const updateArticle = async () => {
+const articleUpdate = async () => {
   submitted.value = true;
   const { titleError, descriptionError, bodyError, tagsError } = validateFields();
 
@@ -163,7 +158,7 @@ const updateArticle = async () => {
       };
 
       if (props.articleToUpdate?.slug) {
-        await articlesStore.updateArticle(props.articleToUpdate.slug, updatedArticle);
+        await updateArticle(props.articleToUpdate.slug, updatedArticle);
         dialogOpen.value = false;
         emit('updated');
       } else {

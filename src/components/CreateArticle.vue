@@ -87,7 +87,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { defineEmits } from 'vue';
-import { createArticle } from '@/service/article'; // Service pour la création d'article
+import { createArticle } from '@/service/article';
 
 const article = ref({
   title: '',
@@ -117,16 +117,15 @@ const isSubmitDisabled = computed(() => {
 });
 
 const createArticleHandler = async () => {
-  submitted.value = true; // Déclenche la validation
+  submitted.value = true;
 
   const { titleError, descriptionError, bodyError, tagsError } = validateFields();
 
   if (titleError || descriptionError || bodyError || tagsError) {
-    return;  // Si des erreurs sont présentes, on ne soumet pas
+    return;
   }
 
   try {
-    // Préparation des données pour l'API
     const newArticle = {
       
         title: article.value.title,
@@ -135,17 +134,22 @@ const createArticleHandler = async () => {
         tagList: tagInput.value.split(',').map((tag: string) => tag.trim()),
     };
 
-    const response = await createArticle(newArticle); // Appel au service pour créer l'article
+    const response = await createArticle(newArticle); 
 
-    // Ferme le dialogue après création et émet l'événement
+    if (response.status !== 201) {
+      console.error('Erreur lors de la création de l\'article:', response);
+      return;
+    }
+
+
     dialogOpen.value = false;
     emit('created');
+
   } catch (error) {
     console.error('Erreur lors de la création de l\'article:', error);
   }
 };
 
-// Réinitialisation des champs lorsque le dialogue est fermé
 const handleDialogClose = () => {
   article.value.title = '';
   article.value.description = '';

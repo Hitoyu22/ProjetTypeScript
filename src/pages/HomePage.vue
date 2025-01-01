@@ -10,7 +10,6 @@
       <p class="mb-8 text-lg">
         Rejoignez notre communauté d'explorateurs de contenu, trouvez des sujets qui vous passionnent et partagez vos idées.
       </p>
-      <!-- Bouton Se connecter -->
       <router-link to="/login">
         <button class="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-md text-lg shadow-lg transition duration-300">
           Se connecter
@@ -24,7 +23,6 @@
 </script>
 
 <style scoped>
-/* Styles optionnels pour la mise en page de la landing page */
 h1 {
   font-size: 3rem;
   font-weight: 700;

@@ -44,19 +44,19 @@ const selectedTag = ref('');
 const isTagsEmpty = computed(() => props.tags.length === 0);
 
 const emit = defineEmits<{
-  (event: 'update:filters', params: any): void;
+  (event: 'update-filters', params: any): void;
 }>();
 
 const onFilterChange = (newTag: string) => {
   selectedTag.value = newTag;
-  emit('update:filters', {
+  emit('update-filters', {
     selectedTag: selectedTag.value,
   });
 };
 
 const resetFilters = () => {
   selectedTag.value = '';
-  emit('update:filters', { selectedTag: null });
+  emit('update-filters', { selectedTag: null });
 };
 
 const capitalize = (str: string) => {
@@ -64,7 +64,7 @@ const capitalize = (str: string) => {
 };
 
 const refreshArticles = () => {
-  emit('update:filters', {}); 
+  emit('update-filters', {}); 
 };
 </script>
 

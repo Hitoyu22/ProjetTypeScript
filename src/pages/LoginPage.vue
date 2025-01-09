@@ -7,15 +7,25 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 
-const email = ref('');
-const password = ref('');
+const form = ref({
+  email: '',
+  password: '',
+});
+
 const loginError = ref(false); 
 
 const userStore = useUserStore();
 const router = useRouter();
 
 const loginUser = async () => {
-  const response = await userStore.login(email.value, password.value);
+  const { email, password } = form.value;
+
+  if (!email || !password) {
+    loginError.value = true;
+    return;
+  }
+
+  const response = await userStore.login(email, password);
 
   if (response.success) {
     loginError.value = false;
@@ -40,7 +50,7 @@ const loginUser = async () => {
               <Label for="email">Email</Label>
               <Input
                 id="email"
-                v-model="email"
+                v-model="form.email"
                 type="email"
                 placeholder="Entrez votre adresse email"
                 required
@@ -53,13 +63,13 @@ const loginUser = async () => {
               <Input
                 type="password"
                 id="password"
-                v-model="password"
+                v-model="form.password"
                 placeholder="Entrez votre mot de passe"
                 required
               />
             </div>
 
-            <p v-if="loginError" class="text-sm text-red-600">
+            <p v-if="loginError" class="text-sm text-red-600" aria-live="assertive">
               Échec de la connexion, identifiants invalides.
             </p>
 
@@ -70,7 +80,7 @@ const loginUser = async () => {
         </CardContent>
         <CardFooter class="text-center">
           <p class="text-sm text-gray-600">
-            Pas encore de compte ?
+            Pas encore de compte ? 
             <router-link to="/register" class="text-indigo-600 hover:text-indigo-700">
               S'inscrire
             </router-link>
@@ -90,3 +100,10 @@ const loginUser = async () => {
     </div>
   </div>
 </template>
+
+<style scoped>
+button:disabled {
+  background-color: #e5e7eb;
+  cursor: not-allowed;
+}
+</style>

@@ -1,8 +1,9 @@
 <template>
   <div>
     <SearchBar v-if="!isFavoritesVisible" :tags="tags" @update-filters="updateFilters" />
-    
+
     <div class="text-center mt-4" v-if="loading">Chargement...</div>
+
     <div v-else>
       <div v-if="filteredArticles.length === 0" class="text-center mt-6 text-lg font-semibold">
         Il n'existe aucun article.
@@ -13,10 +14,10 @@
       </div>
 
       <div v-if="filteredArticles.length > 0" class="flex justify-center mt-6">
-        <Button @click="goToPage(currentPage - 1)" :disabled="currentPage === 1" class="mr-2">
+        <Button @click="goToPage(currentPage - 1)" :disabled="isPreviousPageDisabled" class="mr-2">
           Précédente
         </Button>
-        <Button @click="goToPage(currentPage + 1)" :disabled="currentPage >= totalPages" class="ml-2">
+        <Button @click="goToPage(currentPage + 1)" :disabled="isNextPageDisabled" class="ml-2">
           Suivante
         </Button>
       </div>
@@ -51,11 +52,36 @@ const totalItemsPerPage = 10;
 
 const currentArticles = computed(() => {
   const start = (currentPage.value - 1) * totalItemsPerPage;
-  const end = start + totalItemsPerPage;
-  return filteredArticles.value.slice(start, end);
+  return filteredArticles.value.slice(start, start + totalItemsPerPage);
 });
 
 const totalPages = computed(() => Math.ceil(filteredArticles.value.length / totalItemsPerPage));
+
+const isPreviousPageDisabled = computed(() => currentPage.value === 1);
+
+const isNextPageDisabled = computed(() => currentPage.value >= totalPages.value);
+
+const fetchArticles = async () => {
+  loading.value = true;
+  try {
+    const params = {
+      page: currentPage.value,
+      limit: totalItemsPerPage,
+      tag: selectedTag.value,
+    };
+
+    const service = isFavoritesVisible.value
+      ? fetchFavoriteArticlesService
+      : fetchArticlesService;
+
+    const { articles } = await service(params);
+    filteredArticles.value = mapArticles(articles);
+  } catch (error) {
+    console.error('Erreur lors de la récupération des articles:', error);
+  } finally {
+    loading.value = false;
+  }
+};
 
 const mapArticles = (articles: any[]) =>
   articles.map((article) => ({
@@ -77,30 +103,8 @@ const mapArticles = (articles: any[]) =>
     },
   }));
 
-const fetchArticles = async () => {
-  loading.value = true;
-  try {
-    const params: Record<string, any> = {
-      page: currentPage.value,
-      limit: totalItemsPerPage,
-      tag: selectedTag.value,
-    };
-
-    const service = isFavoritesVisible.value
-      ? fetchFavoriteArticlesService
-      : fetchArticlesService;
-
-    const { articles } = await service(params);
-    filteredArticles.value = mapArticles(articles);
-  } catch (error) {
-    console.error('Erreur lors de la récupération des articles:', error);
-  } finally {
-    loading.value = false;
-  }
-};
-
 const updateFilters = (filters: { selectedTag: string | null }) => {
-  currentPage.value = 1;
+  currentPage.value = 1; 
   selectedTag.value = filters.selectedTag;
   fetchArticles();
 };

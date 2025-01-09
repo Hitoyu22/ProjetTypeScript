@@ -65,9 +65,11 @@
       </div>
 
       <DialogFooter>
+        <DialogClose>
         <Button @click="articleUpdate" :disabled="isSubmitDisabled">
           Mettre à jour l'article
         </Button>
+      </DialogClose>
       </DialogFooter>
     </DialogContent>
   </Dialog>
@@ -84,6 +86,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogClose
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -159,7 +162,6 @@ const articleUpdate = async () => {
 
       if (props.articleToUpdate?.slug) {
         await updateArticle(props.articleToUpdate.slug, updatedArticle);
-        dialogOpen.value = false;
         emit('updated');
       } else {
         console.error('Article à mettre à jour introuvable.');
@@ -175,4 +177,6 @@ const handleDialogClose = () => {
   tagInput.value = '';
   submitted.value = false;
 };
+
+watch([article, tagInput], validateFields);
 </script>

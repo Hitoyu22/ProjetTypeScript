@@ -1,6 +1,6 @@
 <template>
   <div class="flex items-center p-4 mb-6">
-    <h1 className="scroll-m-20 pb-2 text-3xl font-semibold tracking-tight first:mt-0">Ensemble des articles</h1>
+    <h1 class="scroll-m-20 pb-2 text-3xl font-semibold tracking-tight first:mt-0">Ensemble des articles</h1>
     <div class="ml-auto flex items-center space-x-4">
       <CreateArticle @created="refreshArticles" class="mr-2"/>
 
@@ -31,9 +31,8 @@
   </div>
 </template>
 
-
 <script setup lang="ts">
-import { ref, computed } from 'vue';   
+import { ref, computed, watch, onMounted } from 'vue';   
 import CreateArticle from './CreateArticle.vue';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
 
@@ -49,9 +48,6 @@ const emit = defineEmits<{
 
 const onFilterChange = (newTag: string) => {
   selectedTag.value = newTag;
-  emit('update-filters', {
-    selectedTag: selectedTag.value,
-  });
 };
 
 const resetFilters = () => {
@@ -66,6 +62,16 @@ const capitalize = (str: string) => {
 const refreshArticles = () => {
   emit('update-filters', {}); 
 };
+
+watch(selectedTag, (newTag) => {
+  emit('update-filters', {
+    selectedTag: newTag,
+  });
+});
+
+onMounted(() => {
+  console.log('SearchBar component mounted');
+});
 </script>
 
 <style scoped>

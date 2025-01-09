@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -42,6 +42,13 @@ const isValidUrl = (url: string) => {
     return false;
   }
 };
+
+watch(avatarImageUrl, (newUrl) => {
+  if (newUrl !== undefined) {
+    localStorage.setItem('picture', newUrl);
+  }
+});
+
 </script>
 
 <template>

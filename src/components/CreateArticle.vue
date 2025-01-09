@@ -61,19 +61,21 @@
       </div>
 
       <DialogFooter>
+        <DialogClose>
         <Button 
           @click="createArticleHandler" 
           :disabled="isSubmitDisabled"
         >
           Créer l'article
         </Button>
+      </DialogClose>
       </DialogFooter>
     </DialogContent>
   </Dialog>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -83,6 +85,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogClose,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -119,31 +122,23 @@ const isSubmitDisabled = computed(() => {
 const createArticleHandler = async () => {
   submitted.value = true;
 
-  const { titleError, descriptionError, bodyError, tagsError } = validateFields();
+  validateFields();
 
-  if (titleError || descriptionError || bodyError || tagsError) {
+  if (isSubmitDisabled.value) {
     return;
   }
 
   try {
     const newArticle = {
-      
-        title: article.value.title,
-        description: article.value.description,
-        body: article.value.body,
-        tagList: tagInput.value.split(',').map((tag: string) => tag.trim()),
+      title: article.value.title,
+      description: article.value.description,
+      body: article.value.body,
+      tagList: tagInput.value.split(',').map((tag: string) => tag.trim()),
     };
 
-    const response = await createArticle(newArticle); 
+    await createArticle(newArticle);
 
-    if (response.status !== 201) {
-      console.error('Erreur lors de la création de l\'article:', response);
-      return;
-    }
-
-
-    dialogOpen.value = false;
-    emit('created');
+    window.location.reload();
 
   } catch (error) {
     console.error('Erreur lors de la création de l\'article:', error);
@@ -157,4 +152,7 @@ const handleDialogClose = () => {
   tagInput.value = '';
   submitted.value = false; 
 };
+
+watch([article, tagInput], validateFields);
+
 </script>

@@ -1,5 +1,5 @@
 import axios from "axios";
-import { useUserStore } from "../store/userStore"; // Importation du store utilisateur
+import { useUserStore } from "../store/userStore";
 
 export interface Author {
   id: number;
@@ -34,6 +34,22 @@ export interface Comment {
 
 const API_BASE_URL = "https://realword-api.nouwillcode.com/api";
 
+const saveArticlesCount = (articlesCount: number) => {
+  localStorage.setItem("articlesCount", articlesCount.toString());
+}
+
+const saveFavoriteArticlesCount = (favoriteArticlesCount: number) => { 
+  localStorage.setItem("favoriteArticlesCount", favoriteArticlesCount.toString());
+}
+
+export const getArticlesCount = () => {
+  return parseInt(localStorage.getItem("articlesCount") || "0");
+}
+
+export const getFavoriteArticlesCount = () => {
+  return parseInt(localStorage.getItem("favoriteArticlesCount") || "0");
+}
+
 const getAuthHeaders = () => {
   const userStore = useUserStore();
   const token = userStore.token;
@@ -48,6 +64,7 @@ const getAuthHeaders = () => {
 export const fetchArticles = async (params: Record<string, any> = {}) => {
   try {
     const response = await axios.get(`${API_BASE_URL}/articles`, { params });
+    saveArticlesCount(response.data.articlesCount);
     return {
       articles: response.data.articles as Article[],
       articlesCount: response.data.articlesCount,
@@ -189,6 +206,7 @@ export const fetchFavoriteArticles = async (params: Record<string, any> = {}) =>
   try {
     const headers = getAuthHeaders();
     const response = await axios.get(`${API_BASE_URL}/articles/feed`, { headers, params });
+    saveFavoriteArticlesCount(response.data.articlesCount);
     return {
       articles: response.data.articles as Article[],
       articlesCount: response.data.articlesCount,
